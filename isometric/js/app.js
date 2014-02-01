@@ -30,7 +30,7 @@ Lifeform = Class.create(Sprite, {
 window.onload = function(){ // run this function after the window has been loaded
 
 	game = new Core(stageWidth+1,stageHeight+1); // create a new game with resolution of 320x320
-	game.fps = 15;
+	game.fps = 20;
 
 	//Preload resources
 	game.preload('img/Lifeform-rubineRed-iso.png'); // specifies which image files should be loaded when the game starts
@@ -113,22 +113,37 @@ window.onload = function(){ // run this function after the window has been loade
 
 			}
 
+			//Wrap around
 			if (this.currentTileX < 0){
-				this.currentTileX = tileKeeper.length-1;
-			} else if (this.currentTileX > tileKeeper.length-1){
+				this.currentTileX = tileKeeper.length-2;		//why is tileKeeper length 31 and not 30??
+			} else if (this.currentTileX > tileKeeper.length-2){
 				this.currentTileX = 0;
 			}
 
 			if (this.currentTileY < 0){
 				this.currentTileY = tileKeeper[this.currentTileX].length-1;
-			} else if (this.currentTileX > tileKeeper[this.currentTileX].length-1){
+			} else if (/* you had this as this.currentTileX ---> */this.currentTileY > tileKeeper[this.currentTileX].length-1){		//fixed it
 				this.currentTileY = 0;
 			}
 
+			//Update screen location from tile position
 			this.x = tileKeeper[this.currentTileX][this.currentTileY][0];
 			this.y = tileKeeper[this.currentTileX][this.currentTileY][1];
 
+			//console.log('stuck?  ' + this.currentTileX + ' , ' + this.currentTileY);		//trying to debug getting stuck
 
+			//Heatmap of path taken
+			gridImage.context.beginPath();
+			gridImage.context.moveTo( this.x, this.y );
+                		gridImage.context.lineTo( this.x + (tileSize/2), this.y + (tileSize*.6)/2 );
+                		gridImage.context.lineTo( this.x, this.y + (tileSize*.6) );
+                		gridImage.context.lineTo( this.x - (tileSize/2), this.y + (tileSize*.6)/2 );
+                		gridImage.context.lineTo( this.x, this.y );
+			gridImage.context.closePath();
+
+			gridImage.context.fillStyle = 'rgba(0,0,0,.1)';
+			gridImage.context.fill();
+			isoBackGrid.image = gridImage;
 
 
     		
