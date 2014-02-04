@@ -1,10 +1,5 @@
 // Application Script
 
-/*	
-THIS IS A DRAFT OF THE GAME OF LIFE.
-I AM KEEPING THE RANDOM WALK DUDER BECAUSE IT'S EASIER NOT TO REMOVE AND JUST COPY ISOMETRIC ACROSS.
-LIFE IS RUN INSIDE THE DUDER OBJECT USING TILEKEEPER ARRAY WITH EXPANDED DATA.
-*/
 
 enchant(); // declares the use of enchant.js
 
@@ -18,11 +13,11 @@ var tileSize = 20;
 
 var tileKeeper = new Array();
 
-var frameCycle = 0;
-var framesPerIterate = 20;			//game of life iteration speed compared to fps
+var framesPerIteration = 20;
+var frameCycle = framesPerIteration;
 var iterationCount = 0;
-var thisIteration = 2;			//index of cell data, initially the present state
-var nextIteration = 3;			//alternate index, initially used for the new state
+var cellIndex = 2;		//corresponds to tileKeeper array
+var neighborIndex = 3;
 
 //Lifeform Class
 Lifeform = Class.create(Sprite, {
@@ -72,17 +67,97 @@ window.onload = function(){ // run this function after the window has been loade
                 gridImage.context.lineTo( nextX - (tileSize/2), nextY + (tileSize*.6)/2 );
                 gridImage.context.lineTo( nextX, nextY );
 
-                tileKeeper[i].push(new Array(nextX,nextY,0,0) );		//each tile has x,y screen coordinates, cell status (0 or 1), and an alternate used during iteration
+                tileKeeper[i].push(new Array(nextX,nextY,0,0) );
+
         	}
 		}
 
-		initConditions(tileKeeper);		//set the starting cell pattern
-
 		console.log(tileKeeper[4][4][1]);
+		console.log(game.fps);
 
-		gridImage.context.stroke();								   // Actually draw all the lines
+		gridImage.context.stroke();								// Actually draw all the lines
 		isoBackGrid.image = gridImage;						   // Set the sprite image to the new grid image
 		game.rootScene.addChild(isoBackGrid);				   // Add the grid to stage
+
+		//___Game of Life___
+
+		//Initialize the cell states and color
+		gridImage.context.fillStyle = '#eee';
+		for (i = 0; i < tileKeeper.length; i++) {
+			for (j = 0; j < tileKeeper[i].length; j++) {
+				tileKeeper[i][j][cellIndex] = randomIntFromInterval(0,1);		//50% chance each cell starts alive
+
+				gridImage.context.beginPath();
+				gridImage.context.moveTo( tileKeeper[i][j][0], tileKeeper[i][j][1] );
+	    		gridImage.context.lineTo( tileKeeper[i][j][0] + (tileSize/2), tileKeeper[i][j][1] + (tileSize*.6)/2 );
+	    		gridImage.context.lineTo( tileKeeper[i][j][0], tileKeeper[i][j][1] + (tileSize*.6) );
+	    		gridImage.context.lineTo( tileKeeper[i][j][0] - (tileSize/2), tileKeeper[i][j][1] + (tileSize*.6)/2 );
+	    		gridImage.context.lineTo( tileKeeper[i][j][0], tileKeeper[i][j][1] );
+				gridImage.context.closePath();
+
+				gridImage.context.fill();
+			}
+		}
+		isoBackGrid.image = gridImage;
+
+		//Iterator
+		game.addEventListener('enterframe', function() {
+			if (frameCycle >= framesPerIteration) {
+				frameCycle = 1;
+				var neighbors = 0;
+				//Count neighbors
+				for (i = 0; i < tileKeeper.length; i++) {
+				for (j = 0; j < tileKeeper[i].length; j++) {
+					for (ii = -1; ii <= 1; ii++) {
+					for (jj = -1; jj <= 1; jj++) {
+						if (i+ii > 0 && j+jj > 0 && i+ii < tileKeeper.length && j+jj < tileKeeper[i].length) {		//stay inside bounds for neighbor check
+							if (!(jj === 0 && ii === 0) && tileKeeper[i+ii][j+jj][cellIndex] === 1) {
+								neighbors++;
+							}
+						}
+					}}
+					tileKeeper[i][j][neighborIndex] = neighbors;
+					neighbors = 0;
+				}}
+				//Evolve cells and mark cell color if changed
+				for (i = 0; i < tileKeeper.length; i++) {
+				for (j = 0; j < tileKeeper[i].length; j++) {
+					if (tileKeeper[i][j][neighborIndex] < 2 || tileKeeper[i][j][neighborIndex] > 3) {
+						if (tileKeeper[i][j][cellIndex] === 1) {
+							gridImage.context.beginPath();
+							gridImage.context.moveTo( tileKeeper[i][j][0], tileKeeper[i][j][1] );
+				    		gridImage.context.lineTo( tileKeeper[i][j][0] + (tileSize/2), tileKeeper[i][j][1] + (tileSize*.6)/2 );
+				    		gridImage.context.lineTo( tileKeeper[i][j][0], tileKeeper[i][j][1] + (tileSize*.6) );
+				    		gridImage.context.lineTo( tileKeeper[i][j][0] - (tileSize/2), tileKeeper[i][j][1] + (tileSize*.6)/2 );
+				    		gridImage.context.lineTo( tileKeeper[i][j][0], tileKeeper[i][j][1] );
+							gridImage.context.closePath();
+
+							gridImage.context.fillStyle = '#eee';
+							gridImage.context.fill();
+						}
+						tileKeeper[i][j][cellIndex] = 0;
+					} else if (tileKeeper[i][j][neighborIndex] === 3) {
+						if (tileKeeper[i][j][cellIndex] === 0) {
+						gridImage.context.beginPath();
+						gridImage.context.moveTo( tileKeeper[i][j][0], tileKeeper[i][j][1] );
+			    		gridImage.context.lineTo( tileKeeper[i][j][0] + (tileSize/2), tileKeeper[i][j][1] + (tileSize*.6)/2 );
+			    		gridImage.context.lineTo( tileKeeper[i][j][0], tileKeeper[i][j][1] + (tileSize*.6) );
+			    		gridImage.context.lineTo( tileKeeper[i][j][0] - (tileSize/2), tileKeeper[i][j][1] + (tileSize*.6)/2 );
+			    		gridImage.context.lineTo( tileKeeper[i][j][0], tileKeeper[i][j][1] );
+						gridImage.context.closePath();
+
+						gridImage.context.fillStyle = '#113';
+						gridImage.context.fill();
+						}
+						tileKeeper[i][j][cellIndex] = 1;
+					}
+				}}
+				isoBackGrid.image = gridImage;		//update image with the new cell coloring
+				iterationCount++;
+			} else {
+				frameCycle++;
+			}
+		});		//Life is over
 
 
 		var redLifeform = new Sprite(10,10);
@@ -107,12 +182,12 @@ window.onload = function(){ // run this function after the window has been loade
 
 				case 2: // move southEast
 					this.currentTileX += 1;
-					this.frame = [thisIteration];
+					this.frame = [2];
 					break;
 
 				case 3: // move southWest
 					this.currentTileY += 1;
-					this.frame = [nextIteration];
+					this.frame = [3];
 
 					break;
 
@@ -146,66 +221,16 @@ window.onload = function(){ // run this function after the window has been loade
 			//Heatmap of path taken
 			gridImage.context.beginPath();
 			gridImage.context.moveTo( this.x, this.y );
-                		gridImage.context.lineTo( this.x + (tileSize/2), this.y + (tileSize*.6)/2 );
-                		gridImage.context.lineTo( this.x, this.y + (tileSize*.6) );
-                		gridImage.context.lineTo( this.x - (tileSize/2), this.y + (tileSize*.6)/2 );
-                		gridImage.context.lineTo( this.x, this.y );
+    		gridImage.context.lineTo( this.x + (tileSize/2), this.y + (tileSize*.6)/2 );
+    		gridImage.context.lineTo( this.x, this.y + (tileSize*.6) );
+    		gridImage.context.lineTo( this.x - (tileSize/2), this.y + (tileSize*.6)/2 );
+    		gridImage.context.lineTo( this.x, this.y );
 			gridImage.context.closePath();
 
 			gridImage.context.fillStyle = 'rgba(0,0,0,.1)';
 			gridImage.context.fill();
 			isoBackGrid.image = gridImage;
 
-			//___Game of life___
-			/*
-			if (frameCycle === framesPerIterate) {
-				frameCycle = 1;
-				iterationCount++;
-				var neighbors = 0;
-				for (i = 0; i < tileKeeper.length; i++){
-				for (j = 0; j < tileKeeper[i].length; j++){
-					for (ii = -1; ii < 2; ii++){
-					for (jj = -1; jj < 2; jj++){
-						if (i + ii <= tileKeeper.length && j + jj <= tileKeeper[i].length){
-							if (tileKeeper[i + ii][j + jj][thisIteration] === 1){
-							neighbors++;					//count surrounding live cells
-							}
-						}
-					}}
-					if (neighbors < 2){				//apply evolution rules and record result in alternate index
-						tileKeeper[i][j][nextIteration] = 0;
-					} else if (neighbors > 3){
-						tileKeeper[i][j][nextIteration] = 0;
-					} else if (neighbors === 3){
-						tileKeeper[i][j][nextIteration] = 1;
-					}
-					neighbors = 0;
-				}}
-
-				//color cells with new state
-				for (i = 0; i < tileKeeper.length; i++){
-				for (j = 0; j < tileKeeper[i].length; j++){
-					gridImage.context.beginPath();
-					gridImage.context.moveTo( this.x, this.y );
-	                			gridImage.context.lineTo( this.x + (tileSize/2), this.y + (tileSize*.6)/2 );
-	                			gridImage.context.lineTo( this.x, this.y + (tileSize*.6) );
-	                			gridImage.context.lineTo( this.x - (tileSize/2), this.y + (tileSize*.6)/2 );
-	                			gridImage.context.lineTo( this.x, this.y );
-					gridImage.context.closePath();
-					if (tileKeeper[i][j][nextIteration] === 0){
-						gridImage.context.fillStyle = "#fff";
-						gridImage.context.fill();
-					} else if (tileKeeper[i][j][nextIteration] === 1) {
-						gridImage.context.fillStyle = "#000";
-						gridImage.context.fill();
-					}
-				}}
-				var swapIterationIndex = nextIteration;			//swap cell data index for next iteration
-				nextIteration = thisIteration;
-				thisIteration = swapIterationIndex;
-			} else {
-				frameCycle++;
-			}*/
 
     		
 
@@ -232,18 +257,4 @@ window.onload = function(){ // run this function after the window has been loade
 function randomIntFromInterval(min,max)
 {
     return Math.floor(Math.random()*(max-min+1)+min);
-}
-
-//Initialize the life grid
-function initConditions(grid)
-{
-	var percentAlive = .50;		//50% of the cells will randomly start as alive
-	for (i = 0; i < grid.length; i++){
-		for (j = 0; j < grid[i].length; j++){
-			if (Math.random()<percentAlive) {
-				grid[i][j][thisIteration] = 1;
-				grid[i][j][nextIteration] = 1;
-			{
-		}
-	}
 }
